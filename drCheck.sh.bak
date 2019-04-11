@@ -1,0 +1,37 @@
+#!/bin/sh
+
+targetserver=$(head ./targetserver.txt)
+mainserver=$(head ./mainserver.txt)
+
+while true;
+do
+# ping 마지막 결과 값 읽어오기 
+laststatus=$(awk '/-/{print $1}' ./pingresult.txt)
+
+ping -c2  ${targetserver} > /dev/null
+  if [ $? -eq 0 ]
+  then 
+#	echo "OK! Good. Host found..." 
+  if [ $"{laststatus}" == "fail" ]
+	then
+		#마지막 값이 fail 	
+		echo "fail - $(date +%F_%H-%M-%S)" > ./pingresult.txt;
+	fi
+	#echo "ok - $(date +%F_%H-%M-%S)" > ./pingresult.txt;
+	sleep 1 
+  # exit 0
+  else 
+#	echo "Host Not found..."
+        if [ $"{laststatus}" == 'ok' ]
+        then
+                #마지막 값이 ok
+		# sql read only 적용 
+		#sqlcmd  -U sa -P 'tdg@2018!1' -S 172.26.3.142 -Q "select @@servername;"
+                sqlcmd  -U sa -P 'tdg@2018!1' -S $mainserver -Q "select @@servername;"
+  		echo "ok - $(date +%F_%H-%M-%S)"> ./pingresult.txt;
+		sed -i 's/$/sqlserver status change to OK - $(date +%F_%H-%M-%S)/g' ./sql.log
+		echo "sqlserver status changed - $(date +%F_%H-%M-%S)"> ./sqlstatus.log;	
+        fi
+	sleep 1 
+  fi
+done
